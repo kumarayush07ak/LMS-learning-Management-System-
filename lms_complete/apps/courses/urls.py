@@ -10,7 +10,7 @@ urlpatterns = [
     # Analytics
     path('analytics/', views.instructor_analytics, name='instructor_analytics'),
     
-    # Course detail - this should come AFTER all fixed paths
+    # Course detail
     path('<slug:slug>/', views.CourseDetailView.as_view(), name='course_detail'),
     path('<int:pk>/edit/', views.CourseUpdateView.as_view(), name='course_update'),
     path('<int:pk>/delete/', views.CourseDeleteView.as_view(), name='course_delete'),
@@ -35,7 +35,7 @@ urlpatterns = [
     path('folder-file/<int:file_id>/delete/', views.delete_folder_file, name='delete_folder_file'),
     path('folder/<int:folder_id>/delete/', views.delete_folder, name='delete_folder'),
     
-    # REVIEW URLS - ADD THESE LINES
+    # REVIEW URLS
     path('<int:course_id>/reviews/add/', views.add_course_review, name='add_course_review'),
     path('<int:course_id>/instructor/<int:instructor_id>/review/', views.add_instructor_review, name='add_instructor_review'),
     path('reviews/<int:review_id>/helpful/', views.mark_review_helpful, name='mark_review_helpful'),

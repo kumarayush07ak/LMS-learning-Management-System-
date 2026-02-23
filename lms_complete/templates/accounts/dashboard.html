@@ -3,9 +3,9 @@
 {% block title %}Dashboard - EduFlow{% endblock %}
 
 {% block content %}
-<!-- Welcome Section with Solid Blue Design -->
+<!-- Welcome Section -->
 <div class="bg-[#1C1678] rounded-3xl p-8 mb-8 shadow-xl relative overflow-hidden">
-    <!-- Decorative Elements -->
+    
     <div class="absolute top-0 right-0 w-64 h-64 bg-[#2A2485] rounded-full -mr-20 -mt-20 opacity-20"></div>
     <div class="absolute bottom-0 left-0 w-48 h-48 bg-[#3A3495] rounded-full -ml-16 -mb-16 opacity-20"></div>
     
@@ -39,21 +39,6 @@
                     {% endif %}
                 </p>
             </div>
-            
-            <!-- Avatar/Achievement Badge
-            <div class="hidden lg:block">
-                <div class="bg-white/10 rounded-2xl p-4 border border-white/20">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-{% if user.is_student %}graduation-cap{% else %}crown{% endif %} text-white text-xl"></i>
-                        </div>
-                        <div>
-                            <div class="text-white text-sm opacity-80">Current Streak</div>
-                            <div class="text-white font-bold text-xl">{{ streak_days|default:"7" }} days 🔥</div>
-                        </div>
-                    </div>
-                </div>
-            </div> -->
         </div>
         
         <!-- Quick Stats Row -->
@@ -77,12 +62,7 @@
                     <i class="fas fa-spinner mr-2 text-amber-300"></i>In Progress
                 </div>
             </div>
-            {% comment %} <div class="bg-[#2A2485] rounded-xl p-4 hover:bg-[#3A3495] transition-all">
-                <div class="text-3xl font-bold text-white mb-1">{{ certificates_earned|default:"3" }}</div>
-                <div class="text-white/70 text-sm flex items-center">
-                    <i class="fas fa-certificate mr-2 text-amber-300"></i>Certificates
-                </div>
-            </div> {% endcomment %}
+
             {% elif user.is_instructor %}
             <div class="bg-[#2A2485] rounded-xl p-4 hover:bg-[#3A3495] transition-all">
                 <div class="text-3xl font-bold text-white mb-1">{{ total_courses|default:"0" }}</div>
@@ -96,18 +76,6 @@
                     <i class="fas fa-users mr-2"></i>Total Students
                 </div>
             </div>
-            {% comment %} <div class="bg-[#2A2485] rounded-xl p-4 hover:bg-[#3A3495] transition-all">
-                <div class="text-3xl font-bold text-white mb-1">{{ total_reviews|default:"128" }}</div>
-                <div class="text-white/70 text-sm flex items-center">
-                    <i class="fas fa-star mr-2 text-amber-300"></i>Reviews
-                </div>
-            </div>
-            <div class="bg-[#2A2485] rounded-xl p-4 hover:bg-[#3A3495] transition-all">
-                <div class="text-3xl font-bold text-white mb-1">{{ avg_rating|default:"4.8" }}</div>
-                <div class="text-white/70 text-sm flex items-center">
-                    <i class="fas fa-medal mr-2"></i>Rating
-                </div>
-            </div> {% endcomment %}
             {% endif %}
         </div>
     </div>
@@ -115,7 +83,7 @@
 
 <!-- Main Dashboard Grid -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-    <!-- Left Column - Main Content (2/3 width) -->
+    <!-- Left Column -->
     <div class="lg:col-span-2 space-y-8">
         <!-- Continue Learning Section for Students -->
         {% if user.is_student and enrollments %}
@@ -225,7 +193,7 @@
             <div class="p-6 hover:bg-gray-50 transition-colors">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div class="flex items-center gap-4">
-                        <!-- Course Icon/Thumbnail -->
+                        <!-- Course Thumbnail -->
                         <div class="w-16 h-16 bg-[#1C1678]/10 rounded-xl flex items-center justify-center text-[#1C1678] text-2xl">
                             <i class="fas fa-{% if course.status == 'published' %}globe{% else %}lock{% endif %}"></i>
                         </div>
@@ -274,9 +242,9 @@
         {% endif %}
     </div>
 
-    <!-- Right Column - Sidebar (1/3 width) -->
+    <!-- Right Column -->
     <div class="space-y-6">
-        <!-- Quick Actions Card -->
+        <!--Actions Card -->
         <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
             <h3 class="text-lg font-bold text-[#1C1678] mb-4 flex items-center gap-2">
                 <span class="w-1 h-6 bg-[#1C1678] rounded-full"></span>
@@ -299,7 +267,7 @@
                     <span class="flex-1 font-medium">Continue Learning</span>
                     <i class="fas fa-chevron-right text-gray-400 group-hover:text-[#1C1678] group-hover:translate-x-1 transition-all"></i>
                 </a>
-                {% comment %} ś {% endcomment %}
+            
                 {% elif user.is_instructor %}
                 <a href="{% url 'courses:course_create' %}" class="flex items-center gap-3 p-3 hover:bg-[#1C1678]/5 rounded-xl text-gray-700 hover:text-[#1C1678] transition-all group">
                     <div class="w-8 h-8 bg-[#1C1678]/10 rounded-lg flex items-center justify-center text-[#1C1678] group-hover:bg-[#1C1678] group-hover:text-white transition-all">
@@ -308,82 +276,18 @@
                     <span class="flex-1 font-medium">Create New Course</span>
                     <i class="fas fa-chevron-right text-gray-400 group-hover:text-[#1C1678] group-hover:translate-x-1 transition-all"></i>
                 </a>
-                <a href="#" class="flex items-center gap-3 p-3 hover:bg-[#1C1678]/5 rounded-xl text-gray-700 hover:text-[#1C1678] transition-all group">
+                <a href="{% url 'courses:instructor_analytics'%}" class="flex items-center gap-3 p-3 hover:bg-[#1C1678]/5 rounded-xl text-gray-700 hover:text-[#1C1678] transition-all group">
                     <div class="w-8 h-8 bg-[#1C1678]/10 rounded-lg flex items-center justify-center text-[#1C1678] group-hover:bg-[#1C1678] group-hover:text-white transition-all">
                         <i class="fas fa-chart-bar"></i>
                     </div>
                     <span class="flex-1 font-medium">Analytics Dashboard</span>
                     <i class="fas fa-chevron-right text-gray-400 group-hover:text-[#1C1678] group-hover:translate-x-1 transition-all"></i>
                 </a>
-                <a href="#" class="flex items-center gap-3 p-3 hover:bg-[#1C1678]/5 rounded-xl text-gray-700 hover:text-[#1C1678] transition-all group">
-                    <div class="w-8 h-8 bg-[#1C1678]/10 rounded-lg flex items-center justify-center text-[#1C1678] group-hover:bg-[#1C1678] group-hover:text-white transition-all">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <span class="flex-1 font-medium">Manage Students</span>
-                    <i class="fas fa-chevron-right text-gray-400 group-hover:text-[#1C1678] group-hover:translate-x-1 transition-all"></i>
-                </a>
-                <a href="#" class="flex items-center gap-3 p-3 hover:bg-[#1C1678]/5 rounded-xl text-gray-700 hover:text-[#1C1678] transition-all group">
-                    <div class="w-8 h-8 bg-[#1C1678]/10 rounded-lg flex items-center justify-center text-[#1C1678] group-hover:bg-[#1C1678] group-hover:text-white transition-all">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
-                    <span class="flex-1 font-medium">Review Assignments</span>
-                    <i class="fas fa-chevron-right text-gray-400 group-hover:text-[#1C1678] group-hover:translate-x-1 transition-all"></i>
-                </a>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Recent Activity Card with Timeline -->
-        <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-            <h3 class="text-lg font-bold text-[#1C1678] mb-4 flex items-center gap-2">
-                <span class="w-1 h-6 bg-[#1C1678] rounded-full"></span>
-                Recent Activity
-            </h3>
-            
-            <div class="space-y-4">
-                <div class="flex items-start gap-3">
-                    <div class="relative">
-                        <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600">
-                            <i class="fas fa-play-circle text-sm"></i>
-                        </div>
-                        <div class="absolute top-8 left-4 w-0.5 h-12 bg-gray-200"></div>
-                    </div>
-                    <div class="flex-1">
-                        <div class="text-sm font-medium text-gray-800">Started "Python Basics" course</div>
-                        <div class="text-xs text-gray-500 mt-1">2 hours ago</div>
-                    </div>
-                </div>
-                
-                <div class="flex items-start gap-3">
-                    <div class="relative">
-                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
-                            <i class="fas fa-check-circle text-sm"></i>
-                        </div>
-                        <div class="absolute top-8 left-4 w-0.5 h-12 bg-gray-200"></div>
-                    </div>
-                    <div class="flex-1">
-                        <div class="text-sm font-medium text-gray-800">Completed "Variables" lesson</div>
-                        <div class="text-xs text-gray-500 mt-1">5 hours ago</div>
-                    </div>
-                </div>
-                
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
-                        <i class="fas fa-trophy text-sm"></i>
-                    </div>
-                    <div class="flex-1">
-                        <div class="text-sm font-medium text-gray-800">Earned "Quick Learner" badge</div>
-                        <div class="text-xs text-gray-500 mt-1">Yesterday</div>
-                    </div>
-                </div>
-            </div>
-            
-            <a href="#" class="block text-center mt-4 text-[#1C1678] hover:text-[#2A2485] text-sm font-medium transition-colors">
-                View All Activity <i class="fas fa-arrow-right ml-1"></i>
-            </a>
-        </div>
-
-        <!-- Profile Completion Card with Solid Blue -->
+        <!-- Profile Completion -->
         <div class="bg-[#1C1678] rounded-2xl p-6 shadow-xl relative overflow-hidden">
             <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10"></div>
             <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-8 -mb-8"></div>

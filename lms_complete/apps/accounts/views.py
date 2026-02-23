@@ -1,20 +1,12 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-# from django.contrib.auth.views import PasswordResetView
-# from django.urls import reverse_lazy
-from .models import User
 from .forms import UserRegistrationForm, UserLoginForm, UserProfileForm
 from apps.courses.models import Course
 from apps.enrollments.models import Enrollment
-
-
-from django.shortcuts import render, redirect
-from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
-from .forms import UserRegistrationForm
 
 
 def register_view(request):
@@ -24,7 +16,6 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
 
-            # ✅ Different Email Based on User Type
             if user.user_type == 'student':
                 subject = "Welcome to Our Portal 🎉"
                 message = f"""
@@ -56,17 +47,7 @@ We are excited to have you onboard!
 
 Best Regards,
 Portal Team
-"""
-
-            else:
-                subject = "Welcome to Our Portal"
-                message = f"""
-Hi {user.get_full_name()},
-
-Welcome to Our Portal!
-"""
-
-            # ✅ Send Email
+"""         
             try:
                 send_mail(
                     subject,

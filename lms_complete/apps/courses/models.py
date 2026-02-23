@@ -4,7 +4,6 @@ from django.utils.text import slugify
 from django.contrib.auth import get_user_model
 import os
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.db.models import Avg
 
 
 User = get_user_model()
@@ -37,7 +36,6 @@ class Course(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('published', 'Published'),
-        ('archived', 'Archived'),
     ]
     
     title = models.CharField(max_length=200)
@@ -198,8 +196,7 @@ class CourseReview(models.Model):
     )
     title = models.CharField(max_length=200, blank=True)
     comment = models.TextField(blank=True)
-    
-    # Additional helpful metrics
+
     would_recommend = models.BooleanField(default=True)
     difficulty_rating = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
@@ -214,14 +211,13 @@ class CourseReview(models.Model):
     
     class Meta:
         ordering = ['-created_at']
-        unique_together = ['course', 'student']  # One review per student per course
+        unique_together = ['course', 'student']  
     
     def __str__(self):
         return f"{self.student.get_full_name()} - {self.course.title} - {self.rating}★"
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # Update course average rating
         self.update_course_rating()
     
     def update_course_rating(self):
@@ -238,13 +234,13 @@ class InstructorReview(models.Model):
     instructor = models.ForeignKey(
         User, 
         on_delete=models.CASCADE, 
-        related_name='reviews_received',  # Changed from 'instructor_reviews'
+        related_name='reviews_received',  
         limit_choices_to={'user_type': 'instructor'}
     )
     student = models.ForeignKey(
         User, 
         on_delete=models.CASCADE, 
-        related_name='reviews_given',  # Changed from 'instructor_reviews'
+        related_name='reviews_given',  
     )
     course = models.ForeignKey('Course', on_delete=models.CASCADE, related_name='instructor_reviews')
     
@@ -271,14 +267,14 @@ class InstructorReview(models.Model):
     
     class Meta:
         ordering = ['-created_at']
-        unique_together = ['instructor', 'student', 'course']  # One review per student per instructor per course
+        unique_together = ['instructor', 'student', 'course']  
     
     def __str__(self):
         return f"{self.student.get_full_name()} - {self.instructor.get_full_name()} - {self.rating}★"
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # Update instructor's average rating
+        
         self.update_instructor_rating()
     
     def update_instructor_rating(self):
@@ -286,7 +282,7 @@ class InstructorReview(models.Model):
         from django.db.models import Avg
         avg = InstructorReview.objects.filter(instructor=self.instructor).aggregate(Avg('rating'))['rating__avg']
         
-        # If you added rating fields to User model, update them here
+        
         if hasattr(self.instructor, 'instructor_rating'):
             self.instructor.instructor_rating = round(avg, 2) if avg else 0
             self.instructor.total_instructor_reviews = InstructorReview.objects.filter(instructor=self.instructor).count()

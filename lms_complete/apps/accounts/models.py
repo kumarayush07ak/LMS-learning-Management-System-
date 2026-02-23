@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
-import uuid
+
 
 
 class UserManager(BaseUserManager):
@@ -33,14 +33,7 @@ class User(AbstractUser):
     
     # Profile fields
     phone_number = models.CharField(max_length=15, blank=True)
-    bio = models.TextField(max_length=500, blank=True)
-    expertise = models.CharField(max_length=200, blank=True)
     profile_image = models.ImageField(upload_to='profiles/', blank=True, null=True)
-    
-    # Email verification
-    email_verified = models.BooleanField(default=False)
-    email_verification_token = models.UUIDField(default=uuid.uuid4, editable=False)
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

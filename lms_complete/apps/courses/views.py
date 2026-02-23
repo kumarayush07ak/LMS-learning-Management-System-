@@ -9,7 +9,6 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 from .models import Course, Category, Lesson, LessonFile, LessonFolder, FolderFile, CourseReview, InstructorReview, ReviewHelpful
 from .forms import LessonForm
-from .review_forms import CourseReviewForm, InstructorReviewForm
 from apps.enrollments.models import Enrollment
 from apps.accounts.models import User
 from apps.quizzes.models import QuizAttempt
@@ -120,7 +119,6 @@ class CourseCreateView(LoginRequiredMixin, InstructorRequiredMixin, CreateView):
         form.instance.instructor = self.request.user
         response = super().form_valid(form)
 
-        # ✅ Send email to instructor
         subject = "Course Created Successfully 🎉"
         message = f"""
 Hi {self.request.user.get_full_name()},
@@ -160,7 +158,7 @@ class CourseUpdateView(LoginRequiredMixin, InstructorRequiredMixin, UpdateView):
         return context
     
     def get_queryset(self):
-        # Instructors can only edit their own courses
+        
         return Course.objects.filter(instructor=self.request.user)
     
     def form_valid(self, form):
@@ -168,7 +166,7 @@ class CourseUpdateView(LoginRequiredMixin, InstructorRequiredMixin, UpdateView):
         return super().form_valid(form)
     
     def get_success_url(self):
-        # FIXED: Changed from 'courses_detail' to 'course_detail' to match urls.py
+        
         return reverse_lazy('courses:course_detail', kwargs={'slug': self.object.slug})
 
 class CourseDeleteView(LoginRequiredMixin, InstructorRequiredMixin, DeleteView):
@@ -178,7 +176,7 @@ class CourseDeleteView(LoginRequiredMixin, InstructorRequiredMixin, DeleteView):
     success_url = reverse_lazy('courses:course_list')
     
     def get_queryset(self):
-        # Instructors can only delete their own courses
+        
         return Course.objects.filter(instructor=self.request.user)
     
     def delete(self, request, *args, **kwargs):
@@ -197,13 +195,13 @@ def lesson_detail(request, course_slug, lesson_id):
     can_access = False
     is_enrolled = False
     
-    # Case 1: Lesson is free preview - anyone can access
+    
     if lesson.is_free_preview:
         can_access = True
     
     # Case 2: User is authenticated
     elif request.user.is_authenticated:
-        # Check enrollment - DO THIS FIRST
+        
         is_enrolled = Enrollment.objects.filter(
             student=request.user,
             course=course
@@ -213,15 +211,15 @@ def lesson_detail(request, course_slug, lesson_id):
         print(f"DEBUG - Course: {course.title}")
         print(f"DEBUG - Is enrolled: {is_enrolled}")
         
-        # Case 2a: User is the instructor of this course
+        
         if request.user.is_instructor and course.instructor == request.user:
             can_access = True
         
-        # Case 2b: User is admin
+        
         elif request.user.is_admin_user:
             can_access = True
         
-        # Case 2c: User is a student enrolled in the course
+        
         elif is_enrolled:
             can_access = True
     
@@ -259,10 +257,10 @@ def lesson_detail(request, course_slug, lesson_id):
             'accessible': l_accessible
         })
     
-    # Get file count for the resources button
+    
     files_count = LessonFile.objects.filter(lesson=lesson).count()
     
-    # IMPORTANT: Force refresh the enrollment check
+    
     is_enrolled = Enrollment.objects.filter(
         student=request.user,
         course=course
@@ -279,7 +277,7 @@ def lesson_detail(request, course_slug, lesson_id):
         'accessible_lessons': accessible_lessons,
         'current_index': current_index + 1 if current_index is not None else 1,
         'files_count': files_count,
-        'is_enrolled': is_enrolled,  # Make sure this is passed
+        'is_enrolled': is_enrolled,  
     }
     
     return render(request, 'courses/lesson_detail.html', context)
@@ -290,10 +288,9 @@ def manage_lessons(request, course_id):
     """Manage lessons for a course (instructor only)"""
     course = get_object_or_404(Course, id=course_id)
     
-    # Check permission
+    
     if not (request.user.is_instructor and course.instructor == request.user) and not request.user.is_admin_user:
         messages.error(request, 'You do not have permission to manage lessons for this course.')
-        # FIXED: Changed from 'courses_detail' to 'course_detail'
         return redirect('courses:course_detail', slug=course.slug)
     
     lessons = course.lessons.all().order_by('order')
@@ -312,7 +309,7 @@ def lesson_create(request, course_id):
     # Check permission
     if not (request.user.is_instructor and course.instructor == request.user) and not request.user.is_admin_user:
         messages.error(request, 'You do not have permission to add lessons to this course.')
-        # FIXED: Changed from 'courses_detail' to 'course_detail'
+        
         return redirect('courses:course_detail', slug=course.slug)
     
     if request.method == 'POST':
@@ -341,7 +338,7 @@ def lesson_edit(request, course_id, lesson_id):
     # Check permission
     if not (request.user.is_instructor and course.instructor == request.user) and not request.user.is_admin_user:
         messages.error(request, 'You do not have permission to edit this lesson.')
-        # FIXED: Changed from 'courses_detail' to 'course_detail'
+        #
         return redirect('courses:course_detail', slug=course.slug)
     
     if request.method == 'POST':
@@ -369,7 +366,7 @@ def lesson_delete(request, course_id, lesson_id):
     # Check permission
     if not (request.user.is_instructor and course.instructor == request.user) and not request.user.is_admin_user:
         messages.error(request, 'You do not have permission to delete this lesson.')
-        # FIXED: Changed from 'courses_detail' to 'course_detail'
+        
         return redirect('courses:course_detail', slug=course.slug)
     
     if request.method == 'POST':
@@ -390,7 +387,7 @@ def course_students(request, course_id):
     # Check permission
     if not (request.user.is_instructor and course.instructor == request.user) and not request.user.is_admin_user:
         messages.error(request, 'You do not have permission to view this page.')
-        # FIXED: Changed from 'courses_detail' to 'course_detail'
+        
         return redirect('courses:course_detail', slug=course.slug)
     
     enrollments = Enrollment.objects.filter(course=course).select_related('student').order_by('-enrolled_at')
@@ -423,7 +420,7 @@ def lesson_files(request, lesson_id):
     # Check access
     can_access = False
     if request.user.is_authenticated:
-        # Instructors and admins can always access
+        
         if (request.user.is_instructor and course.instructor == request.user) or request.user.is_admin_user:
             can_access = True
         # Students need to be enrolled
@@ -435,7 +432,7 @@ def lesson_files(request, lesson_id):
     
     if not can_access:
         messages.error(request, 'You do not have access to these resources.')
-        # FIXED: Changed from 'courses_detail' to 'course_detail'
+        
         return redirect('courses:course_detail', slug=course.slug)
     
     files = LessonFile.objects.filter(lesson=lesson).order_by('-created_at')
@@ -464,34 +461,25 @@ def upload_lesson_file(request, lesson_id):
             
             file = request.FILES.get('file')
             if file:
-                # Check file size (limit to 100MB)
-                if file.size > 100 * 1024 * 1024:  # 100MB in bytes
+                
+                if file.size > 100 * 1024 * 1024:
                     messages.error(request, 'File size too large. Maximum size is 100MB.')
                     return redirect('courses:lesson_file', lesson_id=lesson.id)
                 
-                # Check if file with same name already exists
+                
                 existing_file = LessonFile.objects.filter(lesson=lesson, title=file.name).first()
                 if existing_file:
                     messages.warning(request, f'A file named "{file.name}" already exists. It will be replaced.')
                     existing_file.delete()
                 
-                # Determine file type from extension
+                
                 ext = file.name.split('.')[-1].lower() if '.' in file.name else ''
                 file_type_map = {
                     'pdf': 'pdf',
                     'doc': 'doc',
                     'docx': 'doc',
                     'ppt': 'ppt',
-                    'pptx': 'ppt',
-                    'zip': 'zip',
-                    'rar': 'zip',
-                    'txt': 'other',
-                    'jpg': 'other',
-                    'jpeg': 'other',
-                    'png': 'other',
-                    'gif': 'other',
-                    'mp4': 'other',
-                    'mp3': 'other',
+                    
                 }
                 file_type = file_type_map.get(ext, 'other')
                 
@@ -511,14 +499,14 @@ def upload_lesson_file(request, lesson_id):
             return redirect('courses:lesson_file', lesson_id=lesson.id)
             
         except Exception as e:
-            # Log the error for debugging
+            
             print(f"Upload error: {str(e)}")
             import traceback
             traceback.print_exc()
             messages.error(request, f'Error uploading file: {str(e)}')
             return redirect('courses:lesson_file', lesson_id=lesson.id)
     
-    # If not POST, redirect to lesson detail
+    
     return redirect('courses:lesson_detail', course_slug=lesson.course.slug, lesson_id=lesson.id)
 
 
@@ -539,7 +527,7 @@ def create_folder(request, lesson_id):
             description = request.POST.get('description', '')
             
             if name:
-                # Check if folder with same name exists
+                
                 existing_folder = LessonFolder.objects.filter(lesson=lesson, name=name).first()
                 if existing_folder:
                     messages.warning(request, f'A folder named "{name}" already exists.')
@@ -583,7 +571,7 @@ def folder_detail(request, folder_id):
     
     if not can_access:
         messages.error(request, 'You do not have access to these resources.')
-        # FIXED: Changed from 'courses_detail' to 'course_detail'
+        
         return redirect('courses:course_detail', slug=course.slug)
     
     files = folder.files.all().order_by('-created_at')
@@ -735,7 +723,7 @@ def add_course_review(request, course_id):
         messages.error(request, 'You must be enrolled in this course to leave a review.')
         return redirect('courses:course_detail', slug=course.slug)
     
-    # Check if user already has a review
+    #
     existing_review = CourseReview.objects.filter(course=course, student=request.user).first()
     
     if request.method == 'POST':
@@ -771,7 +759,7 @@ def add_course_review(request, course_id):
         
         return redirect('courses:course_detail', slug=course.slug)
     
-    # GET request - show form
+
     return render(request, 'courses/add_review.html', {
         'course': course,
         'existing_review': existing_review,
@@ -790,7 +778,7 @@ def add_instructor_review(request, course_id, instructor_id):
         messages.error(request, 'You must be enrolled in this course to review the instructor.')
         return redirect('courses:course_detail', slug=course.slug)
     
-    # Check if user already reviewed this instructor for this course
+    
     existing_review = InstructorReview.objects.filter(
         instructor=instructor, 
         student=request.user, 
@@ -839,7 +827,7 @@ def mark_review_helpful(request, review_id):
     if request.method == 'POST':
         review = get_object_or_404(CourseReview, id=review_id)
         
-        # Check if user already marked this review as helpful
+        
         existing = ReviewHelpful.objects.filter(review=review, user=request.user).first()
         
         if existing:
