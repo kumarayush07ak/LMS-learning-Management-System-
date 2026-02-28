@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate, get_backends
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -10,7 +10,10 @@ from .forms import UserRegistrationForm, UserLoginForm, UserProfileForm
 from .models import User, EmailVerificationOTP
 from apps.courses.models import Course
 from apps.enrollments.models import Enrollment
-
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.sites.shortcuts import get_current_site
 
 def send_otp_email(user, otp):
     """Send OTP verification email using template"""
@@ -294,3 +297,92 @@ def profile_view(request):
         form = UserProfileForm(instance=request.user)
     
     return render(request, 'accounts/profile.html', {'form': form})
+
+
+def password_reset_request(request):
+    """Password reset request page"""
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        
+        try:
+            user = User.objects.get(email=email)
+            
+            # Generate token and uid
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            
+            # Build reset link
+            current_site = get_current_site(request)
+            reset_link = f"http://{current_site.domain}/accounts/password-reset/{uid}/{token}/"
+            
+            # Send email
+            subject = "Password Reset Request - EduFlow"
+            html_message = render_to_string('accounts/password_reset_email.html', {
+                'user': user,
+                'protocol': 'http',
+                'domain': current_site.domain,
+                'uid': uid,
+                'token': token,
+            })
+            plain_message = strip_tags(html_message)
+            
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+            
+            messages.success(request, 'Password reset link has been sent to your email.')
+            return redirect('accounts:password_reset_done')
+            
+        except User.DoesNotExist:
+            messages.error(request, 'No account found with this email address.')
+            return redirect('accounts:password_reset')
+    
+    return render(request, 'accounts/password_reset.html')
+
+
+def password_reset_done(request):
+    """Password reset done page"""
+    return render(request, 'accounts/password_reset_done.html')
+
+
+def password_reset_confirm(request, uidb64, token):
+    """Password reset confirm page"""
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    
+    if user is not None and default_token_generator.check_token(user, token):
+        if request.method == 'POST':
+            password1 = request.POST.get('new_password1')
+            password2 = request.POST.get('new_password2')
+            
+            if password1 != password2:
+                messages.error(request, 'Passwords do not match.')
+                return render(request, 'accounts/password_reset_confirm.html', {'validlink': True})
+            
+            if len(password1) < 8:
+                messages.error(request, 'Password must be at least 8 characters.')
+                return render(request, 'accounts/password_reset_confirm.html', {'validlink': True})
+            
+            # Set new password
+            user.set_password(password1)
+            user.save()
+            
+            messages.success(request, 'Password has been reset successfully.')
+            return redirect('accounts:password_reset_complete')
+        
+        return render(request, 'accounts/password_reset_confirm.html', {'validlink': True})
+    else:
+        return render(request, 'accounts/password_reset_confirm.html', {'validlink': False})
+
+
+def password_reset_complete(request):
+    """Password reset complete page"""
+    return render(request, 'accounts/password_reset_complete.html')
