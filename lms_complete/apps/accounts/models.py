@@ -1,6 +1,9 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
-
+import random
+import string
+from django.utils import timezone
+from datetime import timedelta
 
 
 class UserManager(BaseUserManager):
@@ -34,6 +37,12 @@ class User(AbstractUser):
     # Profile fields
     phone_number = models.CharField(max_length=15, blank=True)
     profile_image = models.ImageField(upload_to='profiles/', blank=True, null=True)
+    
+    # Email verification fields
+    email_verified = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)  # Django's default is True
+    
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -59,6 +68,40 @@ class User(AbstractUser):
     @property
     def is_admin_user(self):
         return self.user_type == 'admin' or self.is_superuser
-    
 
+
+class EmailVerificationOTP(models.Model):
+    """Store OTP for email verification"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='email_otp')
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_verified = models.BooleanField(default=False)
     
+    class Meta:
+        verbose_name = "Email Verification OTP"
+        verbose_name_plural = "Email Verification OTPs"
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.otp}"
+    
+    @staticmethod
+    def generate_otp():
+        """Generate a 6-digit OTP"""
+        return ''.join(random.choices(string.digits, k=6))
+    
+    def is_expired(self):
+        """Check if OTP is expired (10 minutes)"""
+        expiry_time = self.created_at + timedelta(minutes=10)
+        return timezone.now() > expiry_time
+    
+    @classmethod
+    def create_otp(cls, user):
+        """Create or update OTP for user"""
+        otp, created = cls.objects.update_or_create(
+            user=user,
+            defaults={
+                'otp': cls.generate_otp(),
+                'is_verified': False
+            }
+        )
+        return otp

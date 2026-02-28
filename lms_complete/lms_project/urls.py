@@ -11,6 +11,8 @@ urlpatterns = [
     path('enrollments/', include('apps.enrollments.urls')),
     path('quizzes/', include('apps.quizzes.urls')),
     path('', RedirectView.as_view(url='/accounts/dashboard/', permanent=False)),
+
+    path('accounts/', include('allauth.urls')),
 ]
 
 if settings.DEBUG:

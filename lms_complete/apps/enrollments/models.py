@@ -31,7 +31,7 @@ class Enrollment(models.Model):
         return f"{self.student.email} - {self.course.title}"
     
     def save(self, *args, **kwargs):
-        # Check if this is a new enrollment (not updating existing)
+        
         is_new = self.pk is None
         super().save(*args, **kwargs)
         
@@ -41,7 +41,7 @@ class Enrollment(models.Model):
     def delete(self, *args, **kwargs):
         course = self.course
         super().delete(*args, **kwargs)
-        # Update course enrollment count after deletion
+        
         self.update_course_enrollment_count(course)
     
     def update_course_enrollment_count(self, course=None):
@@ -59,8 +59,6 @@ class Enrollment(models.Model):
         if total_lessons == 0:
             self.progress = 0
         else:
-            # In a real app, you'd track completed lessons
-            # For now, we'll just increment progress
             self.progress = min(self.progress + 10, 100)
         
         if self.progress >= 100 and self.status != 'completed':

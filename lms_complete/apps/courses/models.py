@@ -61,7 +61,7 @@ class Course(models.Model):
     
     thumbnail = models.ImageField(upload_to='course_thumbnails/', blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    is_free = models.BooleanField(default=False)
+    # is_free = models.BooleanField(default=False)
     
     total_enrollments = models.PositiveIntegerField(default=0)
     average_rating = models.FloatField(default=0)

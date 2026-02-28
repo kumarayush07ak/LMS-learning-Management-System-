@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify Email - EduFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-[#1C1678] to-[#4A3FBC] flex items-center justify-center px-4 py-12">
+    <!-- Decorative Background -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 bg-gradient-to-br from-[#1C1678] to-[#4A3FBC] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
+                <i class="fas fa-envelope text-white text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Verify Your Email</h1>
+            <p class="text-gray-500">We've sent a 6-digit verification code to</p>
+            <p class="text-[#1C1678] font-semibold text-lg mt-2 bg-[#1C1678]/5 py-2 px-4 rounded-full inline-block">
+                <i class="fas fa-envelope mr-2"></i>{{ email }}
+            </p>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+            <div class="mb-4 p-4 {% if message.tags == 'success' %}bg-green-50 text-green-800 border-l-4 border-green-500{% elif message.tags == 'error' %}bg-red-50 text-red-800 border-l-4 border-red-500{% else %}bg-blue-50 text-blue-800 border-l-4 border-blue-500{% endif %} rounded-lg">
+                <div class="flex items-start gap-3">
+                    <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} mt-0.5"></i>
+                    <div>{{ message }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- OTP Form -->
+        <form method="post" class="space-y-6" id="otpForm">
+            {% csrf_token %}
+            
+            <!-- OTP Input Fields -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-4 text-center">
+                    Enter the 6-digit code sent to your email
+                </label>
+                <div class="flex gap-2 justify-center mb-2" id="otpContainer">
+                    <input type="text" maxlength="1" class="otp-input w-14 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-[#1C1678] focus:ring-4 focus:ring-[#1C1678]/10 outline-none" 
+                           onkeyup="moveToNext(this, 1)" autofocus inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" maxlength="1" class="otp-input w-14 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-[#1C1678] focus:ring-4 focus:ring-[#1C1678]/10 outline-none" 
+                           onkeyup="moveToNext(this, 2)" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" maxlength="1" class="otp-input w-14 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-[#1C1678] focus:ring-4 focus:ring-[#1C1678]/10 outline-none" 
+                           onkeyup="moveToNext(this, 3)" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" maxlength="1" class="otp-input w-14 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-[#1C1678] focus:ring-4 focus:ring-[#1C1678]/10 outline-none" 
+                           onkeyup="moveToNext(this, 4)" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" maxlength="1" class="otp-input w-14 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-[#1C1678] focus:ring-4 focus:ring-[#1C1678]/10 outline-none" 
+                           onkeyup="moveToNext(this, 5)" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" maxlength="1" class="otp-input w-14 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-[#1C1678] focus:ring-4 focus:ring-[#1C1678]/10 outline-none" 
+                           onkeyup="moveToNext(this, 6)" inputmode="numeric" pattern="[0-9]*">
+                </div>
+                <input type="hidden" name="otp" id="otpHidden">
+                
+                <!-- Error message for incomplete OTP -->
+                <p id="otpError" class="text-red-500 text-sm text-center mt-2 hidden">
+                    <i class="fas fa-exclamation-circle mr-1"></i>
+                    Please enter all 6 digits
+                </p>
+            </div>
+
+            <!-- Timer -->
+            <div class="text-center bg-gray-50 rounded-xl p-4" id="timerContainer">
+                <p class="text-sm text-gray-600 mb-2">Code expires in</p>
+                <div class="text-3xl font-bold text-[#1C1678] font-mono" id="timer">10:00</div>
+                <p class="text-xs text-gray-500 mt-2" id="expiredMessage" style="display: none;">
+                    <i class="fas fa-exclamation-triangle text-red-500 mr-1"></i>
+                    Code expired. Please request a new one.
+                </p>
+            </div>
+
+            <!-- Verify Button -->
+            <button type="button" onclick="validateAndSubmit()" 
+                    class="w-full bg-[#1C1678] hover:bg-[#1C1678]/90 text-white font-semibold py-3.5 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                <i class="fas fa-check-circle"></i>
+                Verify Email
+            </button>
+        </form>
+
+        <!-- Resend Options -->
+        <div class="mt-6 text-center">
+            <p class="text-gray-600 text-sm">
+                Didn't receive the code? 
+                <a href="{% url 'accounts:resend_otp' %}" class="text-[#1C1678] font-semibold hover:underline" id="resendLink">
+                    Resend OTP
+                </a>
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                <i class="fas fa-clock mr-1"></i>
+                You can request a new code after 10 minutes
+            </p>
+        </div>
+
+        <!-- Back to Register -->
+        <div class="mt-4 text-center">
+            <a href="{% url 'accounts:register' %}" class="text-sm text-gray-500 hover:text-[#1C1678] transition-colors">
+                <i class="fas fa-arrow-left mr-1"></i>
+                Back to Registration
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+// OTP input handling
+function moveToNext(current, nextIndex) {
+    // Auto move to next input
+    if (current.value.length === 1) {
+        const next = document.querySelector(`.otp-input:nth-child(${nextIndex + 1})`);
+        if (next) {
+            next.focus();
+        }
+    }
+    
+    // Auto move to previous on backspace
+    if (current.value.length === 0 && nextIndex > 1) {
+        const prev = document.querySelector(`.otp-input:nth-child(${nextIndex - 1})`);
+        if (prev) {
+            prev.focus();
+        }
+    }
+    
+    // Hide error message when user starts typing
+    document.getElementById('otpError').classList.add('hidden');
+}
+
+// Validate and submit form
+function validateAndSubmit() {
+    const inputs = document.querySelectorAll('.otp-input');
+    let otp = '';
+    let allFilled = true;
+    
+    inputs.forEach(input => {
+        if (input.value.length === 0) {
+            allFilled = false;
+            input.classList.add('border-red-500');
+        } else {
+            otp += input.value;
+            input.classList.remove('border-red-500');
+        }
+    });
+    
+    if (!allFilled) {
+        document.getElementById('otpError').classList.remove('hidden');
+        return;
+    }
+    
+    // Set hidden field and submit
+    document.getElementById('otpHidden').value = otp;
+    document.getElementById('otpForm').submit();
+}
+
+// Timer functionality
+let timeLeft = 600; // 10 minutes in seconds
+const timerElement = document.getElementById('timer');
+const resendLink = document.getElementById('resendLink');
+const expiredMessage = document.getElementById('expiredMessage');
+
+function updateTimer() {
+    if (timeLeft <= 0) {
+        timerElement.innerHTML = '00:00';
+        timerElement.style.color = '#dc2626';
+        document.getElementById('timerContainer').classList.add('bg-red-50');
+        expiredMessage.style.display = 'block';
+        resendLink.style.pointerEvents = 'auto';
+        resendLink.style.opacity = '1';
+        return;
+    }
+    
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    timerElement.innerHTML = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    timeLeft--;
+}
+
+// Start timer
+setInterval(updateTimer, 1000);
+
+// Prevent pasting into individual inputs
+document.querySelectorAll('.otp-input').forEach(input => {
+    input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const paste = (e.clipboardData || window.clipboardData).getData('text');
+        if (paste.length === 6 && /^\d+$/.test(paste)) {
+            const inputs = document.querySelectorAll('.otp-input');
+            for (let i = 0; i < 6; i++) {
+                inputs[i].value = paste[i];
+            }
+            // Auto submit after paste
+            setTimeout(validateAndSubmit, 100);
+        } else {
+            alert('Please paste a valid 6-digit code');
+        }
+    });
+    
+    // Allow only numbers
+    input.addEventListener('keypress', (e) => {
+        if (!/[0-9]/.test(e.key)) {
+            e.preventDefault();
+        }
+    });
+});
+
+// Auto focus first input on page load
+window.onload = function() {
+    document.querySelector('.otp-input').focus();
+};
+</script>
+
+<style>
+.otp-input {
+    transition: all 0.2s;
+}
+.otp-input:focus {
+    transform: scale(1.05);
+    border-color: #1C1678;
+    box-shadow: 0 0 0 4px rgba(28, 22, 120, 0.1);
+}
+.otp-input.border-red-500 {
+    border-color: #ef4444;
+    animation: shake 0.3s ease-in-out;
+}
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+
+/* Remove spinner for number inputs */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .otp-input {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - EduFlow</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f7;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #1C1678, #4A3FBC);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            color: white;
+            font-size: 28px;
+            margin: 0;
+            font-weight: 700;
+        }
+        .header p {
+            color: rgba(255,255,255,0.9);
+            margin: 10px 0 0;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        .otp-box {
+            background: linear-gradient(135deg, #f0f9ff, #e6f0ff);
+            border: 2px dashed #1C1678;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .otp-code {
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: 8px;
+            color: #1C1678;
+            font-family: monospace;
+        }
+        .expiry-note {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            color: #856404;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Verify Your Email</h1>
+            <p>Welcome to EduFlow!</p>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                Hello <strong>{{ user.get_full_name }}</strong>,
+            </div>
+            
+            <p>Thank you for registering with EduFlow! Please verify your email address by entering the following OTP code:</p>
+            
+            <div class="otp-box">
+                <div class="otp-code">{{ otp }}</div>
+            </div>
+            
+            <div class="expiry-note">
+                ⏰ This OTP will expire in 10 minutes
+            </div>
+            
+            <p>If you didn't create an account with EduFlow, please ignore this email.</p>
+            
+            <p style="margin-top: 30px;">
+                Thanks,<br>
+                <strong>The EduFlow Team</strong>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {% now "Y" %} EduFlow. All rights reserved.</p>
+            <p style="font-size: 12px; margin-top: 10px;">
+                This is an automated message, please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
