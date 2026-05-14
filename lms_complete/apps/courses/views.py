@@ -108,7 +108,7 @@ class CourseCreateView(LoginRequiredMixin, InstructorRequiredMixin, CreateView):
     model = Course
     template_name = 'courses/courses_form.html'
     fields = ['title', 'description', 'short_description', 'category', 'level', 
-              'thumbnail', 'price', 'is_free', 'status']
+              'thumbnail', 'price', 'status']
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -150,7 +150,7 @@ class CourseUpdateView(LoginRequiredMixin, InstructorRequiredMixin, UpdateView):
     model = Course
     template_name = 'courses/courses_form.html'
     fields = ['title', 'description', 'short_description', 'category', 'level', 
-              'thumbnail', 'price', 'is_free', 'status']
+              'thumbnail', 'price', 'status']
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

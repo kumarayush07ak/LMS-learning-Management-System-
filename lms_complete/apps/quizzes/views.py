@@ -9,7 +9,8 @@ from .models import Quiz, Question, QuizAttempt
 from .forms import QuizForm, QuestionForm
 from apps.courses.models import Lesson
 from apps.enrollments.models import Enrollment
-
+from .services.gemini_quiz_service import GeminiQuizGenerator
+import json
 
 # Instructor Views
 @login_required
@@ -461,3 +462,324 @@ def reorder_questions(request, quiz_id):
         return JsonResponse({'success': True})
     
     return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
+
+@login_required
+def ai_generate_quiz(request, lesson_id):
+    """AI-powered quiz generation page using Gemini"""
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    course = lesson.course
+    
+    # Check permission
+    if not (request.user.is_instructor and course.instructor == request.user):
+        messages.error(request, 'You do not have permission to generate quizzes for this lesson.')
+        return redirect('courses:lesson_detail', course_slug=course.slug, lesson_id=lesson.id)
+    
+    # Check if quiz already exists
+    existing_quiz = Quiz.objects.filter(lesson=lesson).first()
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'generate':
+            num_questions = int(request.POST.get('num_questions', 5))
+            difficulty = request.POST.get('difficulty', 'medium')
+            
+            # Store parameters in session
+            request.session['ai_generation_params'] = {
+                'num_questions': num_questions,
+                'difficulty': difficulty
+            }
+            
+            # Generate quiz using Gemini
+            quiz_data = GeminiQuizGenerator.generate_quiz_from_lesson(
+                lesson, 
+                num_questions, 
+                difficulty
+            )
+            
+            if quiz_data['success']:
+                # Store generated quiz in session for preview
+                request.session['generated_quiz'] = quiz_data
+                request.session['generated_quiz_lesson'] = lesson.id
+                
+                messages.success(request, 'Quiz generated successfully! Review and save it below.')
+                return redirect('quizzes:preview_ai_quiz', lesson_id=lesson.id)
+            else:
+            # Check if it's a quota error
+                if quiz_data.get('quota_error'):
+                    messages.error(request, '⚠️ ' + quiz_data.get('error', 'API quota exceeded. Please try again later.'))
+                else:
+                    messages.error(request, f'AI generation failed: {quiz_data.get("error", "Unknown error")}')
+        
+        elif action == 'save_to_existing' and existing_quiz:
+            # Generate additional questions for existing quiz
+            num_questions = int(request.POST.get('num_questions', 3))
+            difficulty = request.POST.get('difficulty', 'medium')
+            
+            # Get existing question texts
+            existing_questions = list(existing_quiz.questions.values_list('text', flat=True))
+            
+            # Generate new questions
+            result = GeminiQuizGenerator.generate_additional_questions(
+                existing_questions,
+                lesson,
+                num_questions,
+                difficulty
+            )
+            
+            if result.get('success'):
+                # Save new questions
+                new_questions = []
+                start_order = existing_quiz.questions.count() + 1
+                
+                for i, q_data in enumerate(result.get('questions', []), start_order):
+                    options = q_data.get('options', {})
+                    question = Question.objects.create(
+                        quiz=existing_quiz,
+                        text=q_data['text'],
+                        points=1,
+                        option_a=options.get('A', ''),
+                        option_b=options.get('B', ''),
+                        option_c=options.get('C', ''),
+                        option_d=options.get('D', ''),
+                        correct_answer=q_data.get('correct_answer', 'A'),
+                        explanation=q_data.get('explanation', ''),
+                        order=i,
+                    )
+                    new_questions.append(question)
+                
+                messages.success(request, f'{len(new_questions)} new questions added to existing quiz!')
+                return redirect('quizzes:manage_questions', quiz_id=existing_quiz.id)
+            else:
+                messages.error(request, f'Failed to generate additional questions: {result.get("error", "Unknown error")}')
+    
+    return render(request, 'quizzes/ai_generate_quiz.html', {
+        'lesson': lesson,
+        'course': course,
+        'existing_quiz': existing_quiz
+    })
+
+
+@login_required
+def preview_ai_quiz(request, lesson_id):
+    """Preview AI-generated quiz before saving"""
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    course = lesson.course
+    
+    # Check permission
+    if not (request.user.is_instructor and course.instructor == request.user):
+        messages.error(request, 'You do not have permission to view this quiz.')
+        return redirect('courses:lesson_detail', course_slug=course.slug, lesson_id=lesson.id)
+    
+    # Get generated quiz from session
+    quiz_data = request.session.get('generated_quiz')
+    stored_lesson_id = request.session.get('generated_quiz_lesson')
+    gen_params = request.session.get('ai_generation_params', {'difficulty': 'medium'})
+    
+    if not quiz_data or stored_lesson_id != lesson.id:
+        messages.error(request, 'No generated quiz found. Please generate one first.')
+        return redirect('quizzes:ai_generate_quiz', lesson_id=lesson.id)
+    
+    # Check if quiz already exists for this lesson
+    existing_quiz = Quiz.objects.filter(lesson=lesson).first()
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'save':
+            if existing_quiz:
+                # UPDATE existing quiz instead of creating new one
+                existing_quiz.title = quiz_data.get('title', f'AI Generated Quiz - {lesson.title}')
+                existing_quiz.description = f"AI-generated quiz using Gemini. Difficulty: {gen_params.get('difficulty', 'medium')}"
+                existing_quiz.time_limit = 30
+                existing_quiz.passing_score = 70
+                existing_quiz.max_attempts = 3
+                existing_quiz.is_published = False
+                existing_quiz.save()
+                
+                # Delete existing questions
+                existing_quiz.questions.all().delete()
+                
+                # Create new questions
+                for i, q_data in enumerate(quiz_data['questions'], 1):
+                    options = q_data.get('options', {})
+                    Question.objects.create(
+                        quiz=existing_quiz,
+                        text=q_data['text'],
+                        points=1,
+                        option_a=options.get('A', ''),
+                        option_b=options.get('B', ''),
+                        option_c=options.get('C', ''),
+                        option_d=options.get('D', ''),
+                        correct_answer=q_data.get('correct_answer', 'A'),
+                        explanation=q_data.get('explanation', ''),
+                        order=i,
+                    )
+                
+                messages.success(request, 'Quiz updated successfully!')
+                quiz_id = existing_quiz.id
+            else:
+                # CREATE new quiz
+                quiz = Quiz.objects.create(
+                    lesson=lesson,
+                    title=quiz_data.get('title', f'AI Generated Quiz - {lesson.title}'),
+                    description=f"AI-generated quiz using Gemini. Difficulty: {gen_params.get('difficulty', 'medium')}",
+                    time_limit=30,
+                    passing_score=70,
+                    max_attempts=3,
+                    is_published=False,
+                )
+                
+                # Create questions
+                for i, q_data in enumerate(quiz_data['questions'], 1):
+                    options = q_data.get('options', {})
+                    Question.objects.create(
+                        quiz=quiz,
+                        text=q_data['text'],
+                        points=1,
+                        option_a=options.get('A', ''),
+                        option_b=options.get('B', ''),
+                        option_c=options.get('C', ''),
+                        option_d=options.get('D', ''),
+                        correct_answer=q_data.get('correct_answer', 'A'),
+                        explanation=q_data.get('explanation', ''),
+                        order=i,
+                    )
+                
+                messages.success(request, 'Quiz created successfully!')
+                quiz_id = quiz.id
+            
+            # Clear session data
+            if 'generated_quiz' in request.session:
+                del request.session['generated_quiz']
+            if 'generated_quiz_lesson' in request.session:
+                del request.session['generated_quiz_lesson']
+            
+            return redirect('quizzes:manage_questions', quiz_id=quiz_id)
+        
+        elif action == 'regenerate':
+            # Redirect back to generation page
+            return redirect('quizzes:ai_generate_quiz', lesson_id=lesson.id)
+        
+        elif action == 'cancel':
+            # Clear session and redirect
+            if 'generated_quiz' in request.session:
+                del request.session['generated_quiz']
+            if 'generated_quiz_lesson' in request.session:
+                del request.session['generated_quiz_lesson']
+            return redirect('quizzes:manage_quizzes', lesson_id=lesson.id)
+    
+    return render(request, 'quizzes/preview_ai_quiz.html', {
+        'lesson': lesson,
+        'course': course,
+        'quiz_data': quiz_data,
+        'existing_quiz': existing_quiz,  # Pass this to template
+    })
+
+
+@login_required
+def ai_generate_more_questions(request, quiz_id):
+    """AJAX endpoint to generate more questions for an existing quiz"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+    lesson = quiz.lesson
+    course = lesson.course
+    
+    # Check permission
+    if not (request.user.is_instructor and course.instructor == request.user):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        num_questions = int(data.get('num_questions', 3))
+        difficulty = data.get('difficulty', 'medium')
+        
+        # Get existing question texts
+        existing_questions = list(quiz.questions.values_list('text', flat=True))
+        
+        # Generate new questions
+        result = GeminiQuizGenerator.generate_additional_questions(
+            existing_questions,
+            lesson,
+            num_questions,
+            difficulty
+        )
+        
+        if result.get('success'):
+            # Save new questions
+            new_questions = []
+            start_order = quiz.questions.count() + 1
+            
+            for i, q_data in enumerate(result.get('questions', []), start_order):
+                options = q_data.get('options', {})
+                question = Question.objects.create(
+                    quiz=quiz,
+                    text=q_data['text'],
+                    points=1,
+                    option_a=options.get('A', ''),
+                    option_b=options.get('B', ''),
+                    option_c=options.get('C', ''),
+                    option_d=options.get('D', ''),
+                    correct_answer=q_data.get('correct_answer', 'A'),
+                    explanation=q_data.get('explanation', ''),
+                    order=i,
+                )
+                new_questions.append({
+                    'id': question.id,
+                    'text': question.text,
+                    'options': {
+                        'A': question.option_a,
+                        'B': question.option_b,
+                        'C': question.option_c,
+                        'D': question.option_d,
+                    },
+                    'correct_answer': question.correct_answer,
+                    'explanation': question.explanation,
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'questions': new_questions,
+                'count': len(new_questions)
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': result.get('error', 'Generation failed')
+            })
+            
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+    
+
+def debug_gemini_models(request):
+    """Debug view to check available Gemini models"""
+    try:
+        import google.generativeai as genai
+        from django.conf import settings
+        
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        models = genai.list_models()
+        
+        available_models = []
+        for model in models:
+            available_models.append({
+                'name': model.name,
+                'display_name': model.display_name,
+                'supported_methods': model.supported_generation_methods
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'api_key_configured': bool(settings.GEMINI_API_KEY),
+            'api_key_preview': settings.GEMINI_API_KEY[:10] + '...' if settings.GEMINI_API_KEY else None,
+            'models': available_models
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+            'api_key_configured': bool(settings.GEMINI_API_KEY)
+        })

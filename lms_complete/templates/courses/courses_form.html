@@ -104,12 +104,12 @@
             </div>
         </div>
         
-        <div class="form-group">
+        {% comment %} <div class="form-group">
             <label style="display: flex; align-items: center; gap: 0.5rem;">
                 <input type="checkbox" name="is_free" {% if form.is_free.value %}checked{% endif %}>
                 <span>This course is free</span>
             </label>
-        </div>
+        </div> {% endcomment %}
         
         <div class="form-group">
             <label class="form-label">Course Thumbnail</label>

@@ -40,15 +40,65 @@
         </div>
     </div>
 
-    <!-- Add Question Button -->
-    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+    <!-- Action Buttons -->
+    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <h2 style="font-size: 1.3rem; font-weight: 600; color: #0f172a;">Questions List</h2>
-        <a href="{% url 'quizzes:add_question' quiz.id %}" 
-           style="background: #8b5cf6; color: white; padding: 0.75rem 2rem; border-radius: 50px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 500; transition: all 0.3s;"
-           onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 25px rgba(139, 92, 246, 0.3)';"
-           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-            <i class="fas fa-plus-circle"></i> Add New Question
-        </a>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="{% url 'quizzes:add_question' quiz.id %}" 
+               style="background: #8b5cf6; color: white; padding: 0.75rem 1.5rem; border-radius: 50px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 500;"
+               onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 25px rgba(139, 92, 246, 0.3)';"
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                <i class="fas fa-plus-circle"></i> Add Manually
+            </a>
+            
+            <button onclick="showAIGenerateModal()" 
+                    style="background: linear-gradient(135deg, #3b82f6, #14b8a6); color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 50px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 500;"
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 25px rgba(59, 130, 246, 0.3)';"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                <i class="fas fa-brain"></i> Generate with AI
+            </button>
+        </div>
+    </div>
+
+    <!-- AI Generate Modal -->
+    <div id="aiGenerateModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 20px; padding: 2rem; max-width: 500px; width: 90%;">
+            <h3 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 1rem;">Generate Questions with AI</h3>
+            <p style="color: #64748b; margin-bottom: 1.5rem;">Generate additional questions for this quiz using Gemini AI</p>
+            
+            <form id="aiGenerateForm">
+                {% csrf_token %}
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #334155;">Number of Questions</label>
+                    <select id="numQuestions" style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 8px;">
+                        <option value="2">2 Questions</option>
+                        <option value="3" selected>3 Questions</option>
+                        <option value="5">5 Questions</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #334155;">Difficulty</label>
+                    <select id="difficulty" style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 8px;">
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" 
+                            style="flex: 1; background: linear-gradient(135deg, #3b82f6, #14b8a6); color: white; padding: 0.75rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        Generate
+                    </button>
+                    <button type="button" onclick="hideAIGenerateModal()" 
+                            style="flex: 1; background: #e2e8f0; color: #334155; padding: 0.75rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Questions List -->
@@ -167,10 +217,16 @@
         <i class="fas fa-question-circle" style="font-size: 4rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
         <h2 style="font-size: 1.5rem; color: #334155; margin-bottom: 0.5rem;">No Questions Yet</h2>
         <p style="color: #64748b; margin-bottom: 2rem;">Start adding multiple choice questions to your quiz</p>
-        <a href="{% url 'quizzes:add_question' quiz.id %}" 
-           style="display: inline-block; background: #8b5cf6; color: white; padding: 1rem 2rem; border-radius: 50px; text-decoration: none; font-weight: 600;">
-            <i class="fas fa-plus-circle"></i> Add Your First Question
-        </a>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{% url 'quizzes:add_question' quiz.id %}" 
+               style="background: #8b5cf6; color: white; padding: 1rem 2rem; border-radius: 50px; text-decoration: none; font-weight: 600;">
+                <i class="fas fa-plus-circle"></i> Add Manually
+            </a>
+            <button onclick="showAIGenerateModal()" 
+                    style="background: linear-gradient(135deg, #3b82f6, #14b8a6); color: white; padding: 1rem 2rem; border: none; border-radius: 50px; font-weight: 600; cursor: pointer;">
+                <i class="fas fa-brain"></i> Generate with AI
+            </button>
+        </div>
     </div>
     {% endif %}
 </div>
@@ -214,13 +270,19 @@
                                 orderBadge.textContent = index + 1;
                             }
                         });
-                        
-                        // Show success message (optional)
-                        console.log('Order updated successfully');
                     }
                 });
             }
         });
+    }
+
+    // AI Generate Modal functions
+    function showAIGenerateModal() {
+        document.getElementById('aiGenerateModal').style.display = 'flex';
+    }
+
+    function hideAIGenerateModal() {
+        document.getElementById('aiGenerateModal').style.display = 'none';
     }
 
     // Delete question function
@@ -235,17 +297,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Remove the question element from DOM
-                    const questionElement = document.querySelector(`.question-item[data-id="${questionId}"]`);
-                    questionElement.remove();
-                    
-                    // Show success message (optional)
-                    alert('Question deleted successfully');
-                    
-                    // Reload page if no questions left
-                    if (document.querySelectorAll('.question-item').length === 0) {
-                        location.reload();
-                    }
+                    location.reload();
                 } else {
                     alert('Error deleting question');
                 }
@@ -256,6 +308,40 @@
             });
         }
     }
+
+    // AI Generate form submission
+    document.getElementById('aiGenerateForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const numQuestions = document.getElementById('numQuestions').value;
+        const difficulty = document.getElementById('difficulty').value;
+        
+        fetch('{% url "quizzes:ai_generate_more" quiz.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                num_questions: numQuestions,
+                difficulty: difficulty
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideAIGenerateModal();
+            if (data.success) {
+                alert(`${data.count} new questions added successfully!`);
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            hideAIGenerateModal();
+            alert('Error generating questions');
+        });
+    });
 </script>
 
 <style>
@@ -278,6 +364,15 @@
         div[style*="grid-template-columns: repeat(2, 1fr)"] {
             grid-template-columns: 1fr !important;
         }
+    }
+    
+    button, a {
+        transition: all 0.3s;
+    }
+    
+    button:hover, a:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 </style>
 {% endblock %}

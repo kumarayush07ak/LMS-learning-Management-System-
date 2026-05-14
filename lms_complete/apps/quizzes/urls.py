@@ -24,4 +24,10 @@ urlpatterns = [
     # Statistics
     path('<int:quiz_id>/statistics/', views.quiz_statistics, name='quiz_statistics'),
     path('<int:quiz_id>/questions/reorder/', views.reorder_questions, name='reorder_questions'),
+
+    # AI Quiz Generation URLs
+    path('ai-generate/<int:lesson_id>/', views.ai_generate_quiz, name='ai_generate_quiz'),
+    path('ai-preview/<int:lesson_id>/', views.preview_ai_quiz, name='preview_ai_quiz'),
+    path('ai-generate-more/<int:quiz_id>/', views.ai_generate_more_questions, name='ai_generate_more'),
+    path('debug-models/', views.debug_gemini_models, name='debug_models'),
 ]

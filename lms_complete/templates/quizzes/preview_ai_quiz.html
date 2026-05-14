@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block title %}Preview AI Quiz - {{ lesson.title }} - EduFlow{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 2rem auto;">
+    <!-- Header -->
+    <div class="mb-8">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <a href="{% url 'quizzes:ai_generate_quiz' lesson.id %}" style="color: #64748b; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-arrow-left"></i> Back to Generator
+            </a>
+        </div>
+        <h1 style="font-size: 2rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Preview Generated Quiz</h1>
+        <p style="color: #64748b;">Review the AI-generated questions before saving</p>
+    </div>
+
+    <!-- Warning for existing quiz -->
+    {% if existing_quiz %}
+    <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 12px; padding: 1rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+        <div style="background: #f59e0b; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-exclamation-triangle" style="color: white; font-size: 1.2rem;"></i>
+        </div>
+        <div>
+            <strong style="color: #92400e; font-size: 1rem;">You already have a quiz for this lesson.</strong>
+            <p style="color: #b45309; margin-top: 0.25rem; font-size: 0.9rem;">Saving will replace the existing quiz and all its questions with this new version.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quiz Preview Card -->
+    <div style="background: white; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 2rem;">
+        <!-- Quiz Header -->
+        <div style="background: linear-gradient(135deg, #3b82f6, #14b8a6); padding: 2rem; color: white;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">{{ quiz_data.title|default:'AI Generated Quiz' }}</h2>
+                    <p style="opacity: 0.9;">{{ quiz_data.questions|length }} questions generated</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 50px; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-brain"></i> AI Generated
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Quiz Stats -->
+            <div style="display: flex; gap: 2rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2);">
+                <div>
+                    <div style="font-size: 0.8rem; opacity: 0.9;">Questions</div>
+                    <div style="font-weight: 700; font-size: 1.2rem;">{{ quiz_data.questions|length }}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; opacity: 0.9;">Total Points</div>
+                    <div style="font-weight: 700; font-size: 1.2rem;">{{ quiz_data.questions|length }}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; opacity: 0.9;">Time Limit</div>
+                    <div style="font-weight: 700; font-size: 1.2rem;">30 min</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; opacity: 0.9;">Passing Score</div>
+                    <div style="font-weight: 700; font-size: 1.2rem;">70%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Questions List -->
+        <div style="padding: 2rem;">
+            {% for question in quiz_data.questions %}
+            <div style="margin-bottom: 2rem; {% if not forloop.last %}padding-bottom: 2rem; border-bottom: 1px solid #e2e8f0;{% endif %}">
+                <!-- Question Header -->
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div style="background: #3b82f6; color: white; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                        {{ forloop.counter }}
+                    </div>
+                    <div style="flex: 1;">
+                        <p style="font-weight: 600; color: #0f172a; font-size: 1.1rem;">{{ question.text }}</p>
+                    </div>
+                </div>
+
+                <!-- Options Grid -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-left: 3rem;">
+                    <!-- Option A -->
+                    <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: {% if question.correct_answer == 'A' %}#d1fae5{% else %}#f8fafd{% endif %}; border: 2px solid {% if question.correct_answer == 'A' %}#10b981{% else %}#e2e8f0{% endif %}; border-radius: 10px;">
+                        <span style="width: 28px; height: 28px; border-radius: 50%; background: {% if question.correct_answer == 'A' %}#10b981{% else %}#e2e8f0{% endif %}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                            A
+                        </span>
+                        <span style="flex: 1; color: {% if question.correct_answer == 'A' %}#065f46{% else %}#334155{% endif %};">{{ question.options.A }}</span>
+                        {% if question.correct_answer == 'A' %}
+                        <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                        {% endif %}
+                    </div>
+
+                    <!-- Option B -->
+                    <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: {% if question.correct_answer == 'B' %}#d1fae5{% else %}#f8fafd{% endif %}; border: 2px solid {% if question.correct_answer == 'B' %}#10b981{% else %}#e2e8f0{% endif %}; border-radius: 10px;">
+                        <span style="width: 28px; height: 28px; border-radius: 50%; background: {% if question.correct_answer == 'B' %}#10b981{% else %}#e2e8f0{% endif %}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                            B
+                        </span>
+                        <span style="flex: 1; color: {% if question.correct_answer == 'B' %}#065f46{% else %}#334155{% endif %};">{{ question.options.B }}</span>
+                        {% if question.correct_answer == 'B' %}
+                        <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                        {% endif %}
+                    </div>
+
+                    <!-- Option C -->
+                    <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: {% if question.correct_answer == 'C' %}#d1fae5{% else %}#f8fafd{% endif %}; border: 2px solid {% if question.correct_answer == 'C' %}#10b981{% else %}#e2e8f0{% endif %}; border-radius: 10px;">
+                        <span style="width: 28px; height: 28px; border-radius: 50%; background: {% if question.correct_answer == 'C' %}#10b981{% else %}#e2e8f0{% endif %}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                            C
+                        </span>
+                        <span style="flex: 1; color: {% if question.correct_answer == 'C' %}#065f46{% else %}#334155{% endif %};">{{ question.options.C }}</span>
+                        {% if question.correct_answer == 'C' %}
+                        <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                        {% endif %}
+                    </div>
+
+                    <!-- Option D -->
+                    <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: {% if question.correct_answer == 'D' %}#d1fae5{% else %}#f8fafd{% endif %}; border: 2px solid {% if question.correct_answer == 'D' %}#10b981{% else %}#e2e8f0{% endif %}; border-radius: 10px;">
+                        <span style="width: 28px; height: 28px; border-radius: 50%; background: {% if question.correct_answer == 'D' %}#10b981{% else %}#e2e8f0{% endif %}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                            D
+                        </span>
+                        <span style="flex: 1; color: {% if question.correct_answer == 'D' %}#065f46{% else %}#334155{% endif %};">{{ question.options.D }}</span>
+                        {% if question.correct_answer == 'D' %}
+                        <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Explanation -->
+                {% if question.explanation %}
+                <div style="margin-top: 1rem; margin-left: 3rem; padding: 1rem; background: #f0f9ff; border-radius: 10px; color: #0369a1;">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <i class="fas fa-info-circle"></i>
+                        <span>{{ question.explanation }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <form method="post" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        {% csrf_token %}
+        
+        <button type="submit" name="action" value="save"
+                style="flex: 1; min-width: 200px; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 1rem 1.5rem; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.3s;"
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 25px rgba(16, 185, 129, 0.4)';"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+            <i class="fas fa-save"></i>
+            {% if existing_quiz %}Update Quiz{% else %}Save Quiz{% endif %}
+        </button>
+        
+        <button type="submit" name="action" value="regenerate"
+                style="flex: 1; min-width: 200px; background: linear-gradient(135deg, #3b82f6, #14b8a6); color: white; padding: 1rem 1.5rem; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.3s;"
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 25px rgba(59, 130, 246, 0.4)';"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+            <i class="fas fa-sync-alt"></i>
+            Regenerate
+        </button>
+        
+        <button type="submit" name="action" value="cancel"
+                style="flex: 1; min-width: 200px; background: #e2e8f0; color: #475569; padding: 1rem 1.5rem; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.3s;"
+                onmouseover="this.style.background='#cbd5e1';"
+                onmouseout="this.style.background='#e2e8f0';">
+            <i class="fas fa-times"></i>
+            Cancel
+        </button>
+    </form>
+
+    <!-- Note -->
+    <div style="margin-top: 2rem; padding: 1rem; background: #f8fafc; border-radius: 12px; display: flex; align-items: center; gap: 0.5rem; color: #64748b; font-size: 0.9rem;">
+        <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
+        <span>You can edit individual questions after saving in the quiz management interface.</span>
+    </div>
+</div>
+
+<style>
+    button {
+        transition: all 0.3s ease;
+        font-family: inherit;
+    }
+    
+    @media (max-width: 768px) {
+        div[style*="grid-template-columns: repeat(2, 1fr)"] {
+            grid-template-columns: 1fr !important;
+        }
+        
+        button {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}

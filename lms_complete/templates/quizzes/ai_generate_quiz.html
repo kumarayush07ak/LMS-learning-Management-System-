@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Generate Quiz - {{ lesson.title }} - EduFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center gap-3 mb-2">
+            <a href="{% url 'quizzes:manage_quizzes' lesson.id %}" class="text-[#1C1678] hover:underline">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Quiz Management
+            </a>
+        </div>
+        <h1 class="text-3xl font-bold text-gray-900">AI Quiz Generator</h1>
+        <p class="text-gray-600 mt-2">Generate quiz questions for "{{ lesson.title }}" using Google Gemini AI</p>
+    </div>
+
+    <!-- Main Card -->
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <!-- AI Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-teal-500 p-6 text-white">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                    <i class="fas fa-brain text-3xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold">Powered by Google Gemini</h2>
+                    <p class="text-white/80">Create engaging quizzes in seconds</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="border-b border-gray-200">
+            <div class="flex">
+                <button class="tab-btn active px-6 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600" data-tab="new">
+                    Create New Quiz
+                </button>
+                {% if existing_quiz %}
+                <button class="tab-btn px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700" data-tab="add">
+                    Add to Existing Quiz
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Tab Content - New Quiz -->
+        <div id="tab-new" class="tab-content p-8">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="generate">
+                
+                <!-- Number of Questions -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-list-ol text-[#1C1678] mr-2"></i>Number of Questions
+                    </label>
+                    <select name="num_questions" class="w-full md:w-64 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#1C1678] focus:ring-4 focus:ring-[#1C1678]/10 transition-all outline-none">
+                        <option value="3">3 Questions</option>
+                        <option value="5" selected>5 Questions</option>
+                        <option value="7">7 Questions</option>
+                        <option value="10">10 Questions</option>
+                    </select>
+                </div>
+
+                <!-- Difficulty Level -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-signal text-[#1C1678] mr-2"></i>Difficulty Level
+                    </label>
+                    <div class="flex gap-4 flex-wrap">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="difficulty" value="easy" class="w-4 h-4 text-[#1C1678]">
+                            <span class="text-gray-700">Easy</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="difficulty" value="medium" checked class="w-4 h-4 text-[#1C1678]">
+                            <span class="text-gray-700">Medium</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="difficulty" value="hard" class="w-4 h-4 text-[#1C1678]">
+                            <span class="text-gray-700">Hard</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Content Preview -->
+                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <h3 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <i class="fas fa-file-alt text-[#1C1678]"></i>
+                        Content being analyzed:
+                    </h3>
+                    <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
+                        <li><strong>Lesson:</strong> {{ lesson.title }}</li>
+                        {% if lesson.description %}
+                        <li><strong>Description:</strong> {{ lesson.description|truncatechars:100 }}</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- Info Box -->
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-blue-600 mt-1"></i>
+                        <div class="text-sm text-blue-800">
+                            <p class="font-medium mb-1">How it works:</p>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>AI analyzes your lesson content</li>
+                                <li>Generates unique, context-aware questions</li>
+                                <li>Each question includes 4 options and explanation</li>
+                                <li>You can preview and edit before saving</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" 
+                        class="w-full bg-gradient-to-r from-blue-600 to-teal-500 hover:from-blue-700 hover:to-teal-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl flex items-center justify-center gap-3">
+                    <i class="fas fa-magic"></i>
+                    Generate Quiz with Gemini
+                </button>
+            </form>
+        </div>
+
+        <!-- Tab Content - Add to Existing Quiz -->
+        {% if existing_quiz %}
+        <div id="tab-add" class="tab-content p-8 hidden">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save_to_existing">
+                
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-green-600 mt-1"></i>
+                        <div class="text-sm text-green-800">
+                            <p><strong>Existing Quiz:</strong> {{ existing_quiz.title }}</p>
+                            <p class="mt-1">{{ existing_quiz.questions.count }} questions already exist</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Number of Questions -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-list-ol text-[#1C1678] mr-2"></i>Number of Additional Questions
+                    </label>
+                    <select name="num_questions" class="w-full md:w-64 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#1C1678] focus:ring-4 focus:ring-[#1C1678]/10 transition-all outline-none">
+                        <option value="2">2 Questions</option>
+                        <option value="3" selected>3 Questions</option>
+                        <option value="5">5 Questions</option>
+                    </select>
+                </div>
+
+                <!-- Difficulty Level -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-signal text-[#1C1678] mr-2"></i>Difficulty Level
+                    </label>
+                    <div class="flex gap-4 flex-wrap">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="difficulty" value="easy" class="w-4 h-4 text-[#1C1678]">
+                            <span class="text-gray-700">Easy</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="difficulty" value="medium" checked class="w-4 h-4 text-[#1C1678]">
+                            <span class="text-gray-700">Medium</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="difficulty" value="hard" class="w-4 h-4 text-[#1C1678]">
+                            <span class="text-gray-700">Hard</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" 
+                        class="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl flex items-center justify-center gap-3">
+                    <i class="fas fa-plus-circle"></i>
+                    Add Questions to Existing Quiz
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Features -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
+                <i class="fas fa-bolt text-blue-600"></i>
+            </div>
+            <h3 class="font-semibold text-gray-800 mb-1">Fast Generation</h3>
+            <p class="text-sm text-gray-500">Create quizzes in seconds with AI</p>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center mb-3">
+                <i class="fas fa-brain text-teal-600"></i>
+            </div>
+            <h3 class="font-semibold text-gray-800 mb-1">Context-Aware</h3>
+            <p class="text-sm text-gray-500">Questions based on your lesson content</p>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-3">
+                <i class="fas fa-edit text-purple-600"></i>
+            </div>
+            <h3 class="font-semibold text-gray-800 mb-1">Manual Editing</h3>
+            <p class="text-sm text-gray-500">Preview and edit before saving</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('active', 'border-blue-600', 'text-blue-600');
+                b.classList.add('text-gray-500');
+            });
+            
+            // Add active class to clicked tab
+            btn.classList.add('active', 'border-blue-600', 'text-blue-600');
+            btn.classList.remove('text-gray-500');
+            
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(c => {
+                c.classList.add('hidden');
+            });
+            
+            // Show selected tab content
+            const tabId = btn.getAttribute('data-tab');
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+        });
+    });
+</script>
+{% endblock %}
